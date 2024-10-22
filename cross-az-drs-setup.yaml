@@ -37,6 +37,10 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access or password decryption to the instance
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  LatestAmiId:
+    Description: The latest Amazon Linux 2 AMI ID
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
   WebServerInstanceType:
     Description: Web Server instance type
     Type: String
@@ -49,10 +53,18 @@ Parameters:
     Default: 0.0.0.0/0
     AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
-  LinuxAmiId:
-    Description: Linux AMI ID. The default AMI used is amzn2-ami-naws-hvm-2.0.20240329.0-x86_64-ebs
+  DRSVpcEndpoint:
+    Description: DRS VPC endpoint service name. Update for your region.
     Type: String
-    Default: ami-009e8842bc3958d58
+    Default: com.amazonaws.ap-southeast-2.drs
+  EC2VpcEndpoint:
+    Description: EC2 VPC endpoint service name. Update for your region.
+    Type: String
+    Default: com.amazonaws.ap-southeast-2.ec2
+  S3VpcEndpoint:
+    Description: S3 VPC endpoint service name. Update for your region.
+    Type: String
+    Default: com.amazonaws.ap-southeast-2.s3
   DRSGroupName:
     Type: String
     Default: DRSGroup
@@ -330,7 +342,7 @@ Resources:
   DRSInterfaceEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      ServiceName: com.amazonaws.ap-southeast-2.drs
+      ServiceName: !Ref DRSVpcEndpoint
       VpcId: !Ref StagingVPC
       SubnetIds:
         - !Ref StagingPrivateSubnet
@@ -343,7 +355,7 @@ Resources:
   EC2InterfaceEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      ServiceName: com.amazonaws.ap-southeast-2.ec2
+      ServiceName: !Ref EC2VpcEndpoint
       VpcId: !Ref StagingVPC
       SubnetIds:
         - !Ref StagingPrivateSubnet
@@ -356,7 +368,7 @@ Resources:
   S3GatewayEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      ServiceName: com.amazonaws.ap-southeast-2.s3
+      ServiceName: !Ref S3VpcEndpoint
       VpcId: !Ref StagingVPC
       RouteTableIds:
         - !Ref StagingPrivateRouteTable
@@ -367,7 +379,7 @@ Resources:
     Properties:
       InstanceType: !Ref WebServerInstanceType
       KeyName: !Ref KeyName
-      ImageId: !Ref LinuxAmiId
+      ImageId: !Ref LatestAmiId
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
